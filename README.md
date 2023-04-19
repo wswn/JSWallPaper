@@ -1,4 +1,7 @@
 # JSWallPaper
+
+![Image text](https://raw.githubusercontent.com/wswn/JSWallPaper/main/UI.jpg)
+
 A WallPaper tool.
 
 This tool is inspired by the effort of [@niumoo](https://github.com/niumoo/bing-wallpaper), and written with python and Javascript.
