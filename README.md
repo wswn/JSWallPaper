@@ -1,6 +1,6 @@
 # JSWallPaper
 
-![Release](https://github.com/wswn/JSWallPaper/releases)
+[Release](https://github.com/wswn/JSWallPaper/releases)
 
 ![Image text](https://raw.githubusercontent.com/wswn/JSWallPaper/main/UI.jpg)
 
