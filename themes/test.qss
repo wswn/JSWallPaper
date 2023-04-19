@@ -1,0 +1,68 @@
+QWidget {
+  background-color: #fff;
+}
+QLabel {
+  color: #464d55;
+  font-weight: 600;
+}
+QLabel#heading {
+  color: #0f1925;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+QLabel#subheading {
+  color: #0f1925;
+  font-size: 12px;
+  font-weight: normal;
+  margin-bottom: 10px;
+}
+
+QLineEdit {
+    border: 1px solid #d0e3ff;
+    border-radius: 5px;
+    padding: 2px 18px 2px 8px;;
+    background: white;
+}
+
+QLineEdit:focus {
+  border: 1px solid #d0e3ff;
+}
+
+QPushButton {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1px solid #0d6efd;
+  padding: 2px 5px;
+  outline: 0px;
+}
+
+QPushButton:hover,
+QPushButton:focus {
+  background-color: #0b5ed7;
+  border: 1px solid #9ac3fe;
+}
+
+QComboBox {
+    border: 1px solid #d0e3ff;
+    border-radius: 5px;
+    padding: 2px 18px 2px 8px;
+    min-width: 6em;
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 , stop: 0.1 , stop: 0.5 , stop: 0.9 , stop: 1 );
+}
+
+QComboBox::drop-down
+{
+     subcontrol-origin: padding;
+     subcontrol-position: top right;
+     width: 15px;
+
+     border-left-width: 1px;
+     border-left-color: darkgray;
+     border-left-style: solid; /* just a single line */
+     border-top-right-radius: 5px; /* same radius as the QComboBox */
+     border-bottom-right-radius: 5px;
+ }
+
