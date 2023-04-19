@@ -1,4 +1,8 @@
 usr.ini
+build
+dist
+setup.py
+.idea
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
