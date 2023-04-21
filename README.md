@@ -10,7 +10,7 @@ This tool is inspired by the effort of [@niumoo](https://github.com/niumoo/bing-
 
 **_Really appreciate it!!!_**
 
-_Platforms: MacOS_
+_Platforms: MacOS, Windows_
 
 It has Very Simple Functions including loading website, injecting js script and then setting backgound. 
 
