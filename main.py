@@ -1,7 +1,5 @@
-
 import os
 import sys
-from pathlib import Path
 
 import requests
 from PyQt6 import QtWidgets, QtCore
@@ -9,7 +7,6 @@ from PyQt6.QtCore import QUrl, QObject, pyqtSlot, QFile, QIODevice
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtWebEngineCore import QWebEngineScript
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from appscript import app, mactypes
 
 
 def client_script():
@@ -28,8 +25,32 @@ def client_script():
     return script
 
 
-class CallHandler(QObject):
+def platform_free_get_path_downloads():
+    if sys.platform == 'darwin':
+        path_to_downloads = os.path.join(os.path.expanduser('~'), "Downloads")
+        return path_to_downloads
+    elif sys.platform == 'win32':
+        import winreg
+        sid = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                             'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders')
+        path_to_downloads, _ = winreg.QueryValueEx(sid, '{374DE290-123F-4565-9164-39C4925E467B}')
+        sid.Close()
+        return path_to_downloads
+    else:
+        path_to_downloads = '*** Unsupported Platform ***'
+        return path_to_downloads
 
+
+def platform_free_set_wallpaper(full_path):
+    if sys.platform == 'darwin':
+        from appscript import app, mactypes
+        app('Finder').desktop_picture.set(mactypes.File(full_path))
+    elif sys.platform == 'win32':
+        import ctypes
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, full_path, 0)
+
+
+class CallHandler(QObject):
     def __init__(self, progress_bar: QtWidgets.QProgressBar):
         super().__init__()
         self._save_dir = ''
@@ -37,7 +58,7 @@ class CallHandler(QObject):
 
     @pyqtSlot(str, str)
     def set_background(self, url, save_as):
-        full_path = self._save_dir + save_as
+        full_path = os.path.join(self._save_dir, save_as)
         print('call received ' + url + " " + full_path)
         if not os.path.exists(full_path):
             resp = requests.get(url, stream=True)
@@ -52,7 +73,9 @@ class CallHandler(QObject):
                     f.write(data)
             self._progress_bar.setValue(0)
             self._progress_bar.setVisible(False)
-        app('Finder').desktop_picture.set(mactypes.File(full_path))
+
+        # Set Background OSX, Windows
+        platform_free_set_wallpaper(full_path)
 
     def set_save_dir(self, save_dir):
         self._save_dir = save_dir
@@ -74,11 +97,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set Central Widget
         self.setCentralWidget(central_widget)
 
-        # Sasic info
+        # Basic info
         self._usr_info_file = "usr.ini"
         self._web_url = 'https://bing.wdbyte.com'
         self._js_dir = 'scripts/'
-        self._save_dir = os.environ['HOME'] + '/Downloads/wallpaper/'
+        self._save_dir = os.path.join(platform_free_get_path_downloads(), "wallpaper")
 
         # User info
         if os.path.exists(self._usr_info_file):
@@ -185,10 +208,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def set_save_dir(self):
-        save_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
-        self._save_dir = save_dir + '/'
+        default = platform_free_get_path_downloads()
+        save_dir = os.path.abspath(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", default))
+
+        self._save_dir = save_dir
         self._handler.set_save_dir(self._save_dir)
         self._save_dir_line_edit.setText(self._save_dir)
+
         with open(self._usr_info_file, "w") as f:
             f.write("save_dir=" + self._save_dir)
 
@@ -204,7 +230,8 @@ class MainWindow(QtWidgets.QMainWindow):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     qApp = QtWidgets.QApplication(sys.argv)
-    qApp.setStyleSheet(Path('themes/test.qss').read_text())
+    with open('themes/test.qss') as f:
+        qApp.setStyleSheet(f.read())
     ui = MainWindow()
     ui.setWindowTitle("WallPaper")
     ui.show()

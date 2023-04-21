@@ -3,6 +3,9 @@
 var downloadLinks = Array.from(document.querySelectorAll('a'))
 .filter(el => el.textContent === 'Download 4k');
 
+const isWindows = navigator.platform.startsWith('Win');
+const pathSep = isWindows ? '\\' : '/';
+
 downloadLinks.forEach(function(link) {
   var button = document.createElement('button');
   button.innerHTML = 'Set Background';
@@ -24,7 +27,10 @@ downloadLinks.forEach(function(link) {
         if (!folder.includes(year_mon)) {
             folder += year_mon + '/'
         }
-        channel.objects.handler.set_background(link.href, folder+fileName);
+        // Reformat path with current platform separator
+        const regex_pathSep = /\//g;
+        let fullPath = (folder+fileName).replace(regex_pathSep, pathSep)
+        channel.objects.handler.set_background(link.href, fullPath);
     });
   });
   link.parentNode.insertBefore(button, link.nextSibling);
