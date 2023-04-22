@@ -2,11 +2,25 @@ import os
 import sys
 
 import requests
-from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtCore import QUrl, QObject, pyqtSlot, QFile, QIODevice
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QVBoxLayout,
+    QWidget,
+    QLabel,
+    QComboBox,
+    QHBoxLayout,
+    QPushButton,
+    QLineEdit,
+    QProgressBar,
+    QFileDialog
+)
+from PyQt6.QtCore import Qt, pyqtSlot, QUrl, QObject, QFile, QIODevice
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtWebEngineCore import QWebEngineScript
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+
+basedir = os.path.dirname(__file__)
 
 
 def client_script():
@@ -51,7 +65,7 @@ def platform_free_set_wallpaper(full_path):
 
 
 class CallHandler(QObject):
-    def __init__(self, progress_bar: QtWidgets.QProgressBar):
+    def __init__(self, progress_bar: QProgressBar):
         super().__init__()
         self._save_dir = ''
         self._progress_bar = progress_bar
@@ -81,26 +95,26 @@ class CallHandler(QObject):
         self._save_dir = save_dir
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
-        QtWidgets.QMainWindow.__init__(self)
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+        QMainWindow.__init__(self)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         x, y, w, h = self.geometry().x(), self.geometry().y(), 1280, 720
         self.setGeometry(x, y, w, h)
 
         # Central Widget
-        main_layout = QtWidgets.QVBoxLayout()
-        central_widget = QtWidgets.QWidget()
+        main_layout = QVBoxLayout()
+        central_widget = QWidget()
         central_widget.setLayout(main_layout)
 
         # Set Central Widget
         self.setCentralWidget(central_widget)
 
         # Basic info
-        self._usr_info_file = "usr.ini"
         self._web_url = 'https://bing.wdbyte.com'
-        self._js_dir = 'scripts/'
+        self._usr_info_file = os.path.join(basedir, "usr.ini")
+        self._js_dir = os.path.join(basedir, 'scripts/')
         self._save_dir = os.path.join(platform_free_get_path_downloads(), "wallpaper")
 
         # User info
@@ -115,7 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._urls = self.get_all_supported_url()
 
         # Set Progress bar
-        self._progress_bar = QtWidgets.QProgressBar()
+        self._progress_bar = QProgressBar()
         self._progress_bar.setRange(0, 100)
         self._progress_bar.setValue(0)
         self._progress_bar.setFixedHeight(2)
@@ -123,21 +137,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._progress_bar.setVisible(False)
 
         # Set toolbar
-        self._url_label = QtWidgets.QLabel("URL")
-        self._url_combo_box = QtWidgets.QComboBox()
+        self._url_label = QLabel("URL")
+        self._url_combo_box = QComboBox()
         self._url_combo_box.addItems(self._urls)
         self._url_combo_box.setCurrentText(self._web_url)
         self._url_combo_box.currentIndexChanged.connect(self.refresh_url)
         self._url_combo_box.adjustSize()
 
-        tool_url_layout = QtWidgets.QHBoxLayout()
+        tool_url_layout = QHBoxLayout()
         tool_url_layout.addWidget(self._url_label)
         tool_url_layout.addWidget(self._url_combo_box)
 
-        self._save_dir_button = QtWidgets.QPushButton("Save into")
-        self._save_dir_line_edit = QtWidgets.QLineEdit(self._save_dir)
+        self._save_dir_button = QPushButton("Save into")
+        self._save_dir_line_edit = QLineEdit(self._save_dir)
 
-        tool_save_dir_layout = QtWidgets.QHBoxLayout()
+        tool_save_dir_layout = QHBoxLayout()
         tool_save_dir_layout.addWidget(self._save_dir_button)
         tool_save_dir_layout.addWidget(self._save_dir_line_edit)
         tool_save_dir_layout.setSpacing(5)
@@ -145,7 +159,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._save_dir_button.clicked.connect(self.set_save_dir)
         self._save_dir_line_edit.setReadOnly(True)
 
-        tool_layout = QtWidgets.QHBoxLayout()
+        tool_layout = QHBoxLayout()
         tool_layout.addLayout(tool_url_layout)
         tool_layout.addLayout(tool_save_dir_layout)
 
@@ -195,21 +209,23 @@ class MainWindow(QtWidgets.QMainWindow):
                         # TODO now only one js is supported.
                         break
         if js_file == '':
-            return """ console.log("No js found")"""
+            return ""
 
         with open(js_file) as f:
             return f.read()
 
-    @QtCore.pyqtSlot(bool)
+    @pyqtSlot(bool)
     def script_injection(self, ok):
         if ok:
             script = self.get_usr_script()
+            if script == "":
+                return
             self._browser.page().runJavaScript(script)
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def set_save_dir(self):
         default = platform_free_get_path_downloads()
-        save_dir = os.path.abspath(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", default))
+        save_dir = os.path.abspath(QFileDialog.getExistingDirectory(self, "Select Directory", default))
 
         self._save_dir = save_dir
         self._handler.set_save_dir(self._save_dir)
@@ -218,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
         with open(self._usr_info_file, "w") as f:
             f.write("save_dir=" + self._save_dir)
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def refresh_url(self):
         self._web_url = self._url_combo_box.currentText()
         self._browser.load(QUrl(self._web_url))
@@ -229,8 +245,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    qApp = QtWidgets.QApplication(sys.argv)
-    with open('themes/test.qss') as f:
+    qApp = QApplication(sys.argv)
+    with open(os.path.join(basedir, 'themes/test.qss')) as f:
         qApp.setStyleSheet(f.read())
     ui = MainWindow()
     ui.setWindowTitle("WallPaper")
