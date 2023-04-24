@@ -20,7 +20,8 @@ from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtWebEngineCore import QWebEngineScript
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
-basedir = os.path.dirname(__file__)
+# basedir = os.path.dirname(__file__)
+basedir = './'
 
 
 def client_script():
