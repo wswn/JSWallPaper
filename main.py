@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
         self._progress_bar.setVisible(False)
 
         # Set toolbar
-        self._url_label = QLabel("URL")
+        self._url_label = QLabel("Go")
         self._url_combo_box = QComboBox()
         self._url_combo_box.addItems(self._urls)
         self._url_combo_box.setCurrentText(self._web_url)
@@ -173,7 +173,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(self._browser)
 
-        # Interaction
+        # Cross-domain Interaction
         self._handler = CallHandler(self._progress_bar)
         self._handler.set_save_dir(self._save_dir)
 
