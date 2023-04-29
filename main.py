@@ -2,6 +2,7 @@ import os
 import sys
 
 import requests
+
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -23,7 +24,14 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 # basedir = os.path.dirname(__file__)
 basedir = './'
 
+DEBUG_PORT = '35588'
+DEBUG_URL = 'http://127.0.0.1:%s' % DEBUG_PORT
 
+# Must make sure that the user-agent is latest!
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'}
+
+
+# Copy from: https://riverbankcomputing.com/pipermail/pyqt/2015-August/036346.html
 def client_script():
     script = QWebEngineScript()
     qwebchannel_js = QFile(':/qtwebchannel/qwebchannel.js')
@@ -76,12 +84,13 @@ class CallHandler(QObject):
         full_path = os.path.join(self._save_dir, save_as)
         print('call received ' + url + " " + full_path)
         if not os.path.exists(full_path):
-            resp = requests.get(url, stream=True)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            # Download picture
+            resp = requests.get(url, stream=True, headers=headers)
             total_size = int(resp.headers.get('content-length', 0))
             block_size = 1024
             self._progress_bar.setRange(0, total_size)
             self._progress_bar.setVisible(True)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 for data in resp.iter_content(block_size):
                     self._progress_bar.setValue(self._progress_bar.value() + block_size)
@@ -167,9 +176,11 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(tool_layout)
 
         # Browser, comment the next line if no debug info is required.
-        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--enable-logging --log-level=0"
+        # os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--enable-logging --log-level=0"
         self._browser = QWebEngineView()
-        self._browser.loadFinished.connect(self.script_injection)
+        self._browser.loadProgress.connect(self._progress_bar.setValue)
+        self._browser.loadStarted.connect(self.load_started)
+        self._browser.loadFinished.connect(self.load_finished)
         self._browser.page().profile().scripts().insert(client_script())
 
         main_layout.addWidget(self._browser)
@@ -198,6 +209,7 @@ class MainWindow(QMainWindow):
         return urls
 
     def get_usr_script(self):
+        # TODO cache script to avoid from opening script file repeatedly.
         js_dir = self._js_dir
         js_file = ''
         for js in os.listdir(js_dir):
@@ -214,14 +226,6 @@ class MainWindow(QMainWindow):
 
         with open(js_file) as f:
             return f.read()
-
-    @pyqtSlot(bool)
-    def script_injection(self, ok):
-        if ok:
-            script = self.get_usr_script()
-            if script == "":
-                return
-            self._browser.page().runJavaScript(script)
 
     @pyqtSlot()
     def set_save_dir(self):
@@ -240,12 +244,27 @@ class MainWindow(QMainWindow):
         self._web_url = self._url_combo_box.currentText()
         self._browser.load(QUrl(self._web_url))
 
+    @pyqtSlot()
+    def load_started(self):
+        self._progress_bar.setVisible(True)
+
+    @pyqtSlot(bool)
+    def load_finished(self, ok):
+        if ok:
+            self._progress_bar.setVisible(False)
+            script = self.get_usr_script()
+            if script == "":
+                return
+            self._browser.page().runJavaScript(script)
+
     def resizeEvent(self, event):
         self._progress_bar.setFixedWidth(self.width())
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    # os.environ['QTWEBENGINE_REMOTE_DEBUGGING'] = DEBUG_PORT
+
     qApp = QApplication(sys.argv)
     with open(os.path.join(basedir, 'themes/test.qss')) as f:
         qApp.setStyleSheet(f.read())

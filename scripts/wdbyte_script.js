@@ -1,4 +1,4 @@
-// host_url = https://bing.wdbyte.com, https://www.baidu.com
+// host_url = https://bing.wdbyte.com
 
 var downloadLinks = Array.from(document.querySelectorAll('a'))
 .filter(el => el.textContent === 'Download 4k');

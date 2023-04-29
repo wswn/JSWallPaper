@@ -2,7 +2,7 @@
 
 [Release](https://github.com/wswn/JSWallPaper/releases)
 
-![Image text](https://raw.githubusercontent.com/wswn/JSWallPaper/main/UI.jpg)
+![Image text](https://raw.githubusercontent.com/wswn/JSWallPaper/main/UIExamples/wdbyte.jpg)
 
 A WallPaper tool.
 
