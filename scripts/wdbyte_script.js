@@ -31,9 +31,14 @@ downloadLinks.forEach(function(link) {
         let fullPath = (folder+fileName).replace(regexPathSep, pathSep)
 
         // API: Set Desktop Background.
-        new QWebChannel(qt.webChannelTransport, function(channel) {
+        if (typeof QWebChannel === "function") {
+          new QWebChannel(qt.webChannelTransport, function(channel) {
             channel.objects.handler.set_background(link.href, fullPath);
-        });
+          });
+        }
+        if (window.webkit) {
+          window.webkit.messageHandlers.callbackHandler.postMessage({'href': link.href, 'file': fullPath})
+        }
     });
     link.parentNode.insertBefore(button, link.nextSibling);
 });

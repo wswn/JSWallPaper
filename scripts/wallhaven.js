@@ -32,9 +32,14 @@ function add_buttons_for_figures(figures) {
           const url = origin_img.src
           const filename = folder + url.substring(url.lastIndexOf("/") + 1);
 
-          new QWebChannel(qt.webChannelTransport, function(channel) {
-            channel.objects.handler.set_background(url, filename);
-          });
+          if (typeof QWebChannel === "function") {
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+              channel.objects.handler.set_background(url, filename);
+            });
+          }
+          if (window.webkit) {
+            window.webkit.messageHandlers.callbackHandler.postMessage({'href': url, 'file': filename})
+          }
         })
         .catch(error => console.error(error));
     });
