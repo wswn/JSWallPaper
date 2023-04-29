@@ -2,34 +2,37 @@
 
 [Release](https://github.com/wswn/JSWallPaper/releases)
 
-![Image text](https://raw.githubusercontent.com/wswn/JSWallPaper/main/UIExamples/wdbyte.jpg)
+**_Supported Websites:_**
+* https://bing.wdbyte.com
+* https://wallhaven.cc
 
-A WallPaper tool.
+<p align="center">
+  <img alt="Light" src="./UIExamples/wdbyte.jpg" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Dark" src="./UIExamples/wallhaven.jpg" width="45%">
+</p>
 
-This tool is inspired by the effort of [@niumoo](https://github.com/niumoo/bing-wallpaper), and written with python and Javascript.
+### This is a tool to set desktop background on Windows and MacOS.
 
-**_Really appreciate it!!!_**
+This tool has Very Simple Functions including loading website, injecting js script and then setting backgound. It is inspired by the effort of [@niumoo](https://github.com/niumoo/bing-wallpaper), and written with python and Javascript. _Really appreciate it!!!_
 
-_Platforms: MacOS, Windows_
+**_Platforms: MacOS, Windows_**
 
-It has Very Simple Functions including loading website, injecting js script and then setting backgound. 
-
-**_Traits:_**
-
+**_Advant._**
 * Convenient ...
 
-**_For extension_**, just write a JS file and put it into `./scripts`. 
-Make sure specifying the target host url at the first line with the format like: 
+**_For extension_**
+* Write a JS file and put it into `./scripts`. Make sure specifying the target host url at the first line with the format like:
 
-`// host_url = https://bing.wdbyte.com, www.baidu.com`
+    `// host_url = https://bing.wdbyte.com, www.baidu.com`
 
-Then, set the obtained pic url and the file to be saved with the format like
+* Then, set the obtained pic url and the file to be saved with the format like
 
-``` javascript
-new QWebChannel(qt.webChannelTransport, function(channel) {
-    var url = ...
-    var file = ...
-    channel.objects.handler.set_background(url, file);
-});
-```
-All done.
+    ``` javascript
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+        var url = ...
+        var file = ...
+        channel.objects.handler.set_background(url, file);
+    });
+    ```
+    All done.
