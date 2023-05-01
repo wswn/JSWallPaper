@@ -3,7 +3,7 @@ import sys
 
 import requests
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QVBoxLayout,
@@ -16,10 +16,10 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QFileDialog
 )
-from PyQt6.QtCore import Qt, pyqtSlot, QUrl, QObject, QFile, QIODevice
-from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtWebEngineCore import QWebEngineScript
-from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import Qt, Slot, QUrl, QObject, QFile, QIODevice
+from PySide6.QtWebChannel import QWebChannel
+from PySide6.QtWebEngineCore import QWebEngineScript
+from PySide6.QtWebEngineWidgets import QWebEngineView
 
 # basedir = os.path.dirname(__file__)
 basedir = './'
@@ -79,7 +79,7 @@ class CallHandler(QObject):
         self._save_dir = ''
         self._progress_bar = progress_bar
 
-    @pyqtSlot(str, str)
+    @Slot(str, str)
     def set_background(self, url, save_as):
         full_path = os.path.join(self._save_dir, save_as)
         print('call received ' + url + " " + full_path)
@@ -226,7 +226,7 @@ class MainWindow(QMainWindow):
         with open(js_file) as f:
             return f.read()
 
-    @pyqtSlot()
+    @Slot()
     def set_save_dir(self):
         default = platform_free_get_path_downloads()
         save_dir = os.path.abspath(QFileDialog.getExistingDirectory(self, "Select Directory", default))
@@ -238,16 +238,16 @@ class MainWindow(QMainWindow):
         with open(self._usr_info_file, "w") as f:
             f.write("save_dir=" + self._save_dir)
 
-    @pyqtSlot()
+    @Slot()
     def refresh_url(self):
         self._web_url = self._url_combo_box.currentText()
         self._browser.load(QUrl(self._web_url))
 
-    @pyqtSlot()
+    @Slot()
     def load_started(self):
         self._progress_bar.setVisible(True)
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def load_finished(self, ok):
         if ok:
             self._progress_bar.setVisible(False)
