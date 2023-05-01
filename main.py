@@ -198,7 +198,6 @@ class MainWindow(QMainWindow):
     def get_all_supported_url(self):
         urls = []
         js_dir = self._js_dir
-        js_file = ''
         for js in os.listdir(js_dir):
             with open(js_dir + js) as f:
                 # First line
