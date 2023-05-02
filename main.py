@@ -2,28 +2,17 @@ import os
 import sys
 
 import requests
-
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QVBoxLayout,
-    QWidget,
-    QLabel,
-    QComboBox,
-    QHBoxLayout,
-    QPushButton,
-    QLineEdit,
-    QProgressBar,
-    QFileDialog
-)
-from PySide6.QtCore import Qt, Slot, QUrl, QObject, QFile, QIODevice
+from PySide6.QtCore import Qt, Slot, Signal, QUrl, QObject, QFile, QIODevice
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineScript
-from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+
+from ui_MainWindow import Ui_MainWindow
 
 # basedir = os.path.dirname(__file__)
-basedir = './'
+BASE_DIR = '.'
 
+# Debug webengine
 DEBUG_PORT = '35588'
 DEBUG_URL = 'http://127.0.0.1:%s' % DEBUG_PORT
 
@@ -73,11 +62,43 @@ def platform_free_set_wallpaper(full_path):
         ctypes.windll.user32.SystemParametersInfoW(20, 0, full_path, 0)
 
 
+def get_all_supported_url(js_dir):
+    urls = []
+    for js in os.listdir(js_dir):
+        with open(os.path.join(js_dir, js)) as f:
+            # First line
+            line = f.readline()
+            if 'host_url' in line:
+                host_urls = line.replace(' ', '').replace('\n', '').replace('//host_url=', '').split(',')
+                urls.extend(host_urls)
+    return urls
+
+
+def get_usr_script(host_url, js_dir):
+    # TODO cache script to avoid from opening script file repeatedly.
+    js_file = ''
+    for js in os.listdir(js_dir):
+        with open(os.path.join(js_dir, js)) as f:
+            line = f.readline()
+            if 'host_url' in line:
+                urls = line.replace(" ", "").replace('\n', "")
+                if host_url in urls:
+                    js_file = os.path.join(js_dir, js)
+                    # TODO now only one js is supported.
+                    break
+    if js_file == '':
+        return ""
+
+    with open(js_file) as f:
+        return f.read()
+
+
 class CallHandler(QObject):
-    def __init__(self, progress_bar: QProgressBar):
+    progress = Signal(int)
+
+    def __init__(self):
         super().__init__()
         self._save_dir = ''
-        self._progress_bar = progress_bar
 
     @Slot(str, str)
     def set_background(self, url, save_as):
@@ -89,14 +110,18 @@ class CallHandler(QObject):
             resp = requests.get(url, stream=True, headers=headers)
             total_size = int(resp.headers.get('content-length', 0))
             block_size = 1024
-            self._progress_bar.setRange(0, total_size)
-            self._progress_bar.setVisible(True)
+            recv_size = 0
+            progress_value = 0
+            self.progress.emit(0)
             with open(full_path, "wb") as f:
                 for data in resp.iter_content(block_size):
-                    self._progress_bar.setValue(self._progress_bar.value() + block_size)
+                    recv_size += block_size
+                    past_value = progress_value
+                    progress_value = int(recv_size / total_size * 100)
+                    if past_value != progress_value:
+                        self.progress.emit(progress_value)
                     f.write(data)
-            self._progress_bar.setValue(0)
-            self._progress_bar.setVisible(False)
+            self.progress.emit(100)
 
         # Set Background OSX, Windows
         platform_free_set_wallpaper(full_path)
@@ -107,24 +132,16 @@ class CallHandler(QObject):
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        QMainWindow.__init__(self)
+        super(MainWindow, self).__init__()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-
-        x, y, w, h = self.geometry().x(), self.geometry().y(), 1280, 720
-        self.setGeometry(x, y, w, h)
-
-        # Central Widget
-        main_layout = QVBoxLayout()
-        central_widget = QWidget()
-        central_widget.setLayout(main_layout)
-
-        # Set Central Widget
-        self.setCentralWidget(central_widget)
 
         # Basic info
         self._web_url = 'https://bing.wdbyte.com'
-        self._usr_info_file = os.path.join(basedir, "usr.ini")
-        self._js_dir = os.path.join(basedir, 'scripts/')
+        self._usr_info_file = os.path.join(BASE_DIR, "usr.ini")
+        self._js_dir = os.path.join(BASE_DIR, 'scripts')
         self._save_dir = os.path.join(platform_free_get_path_downloads(), "wallpaper")
 
         # User info
@@ -136,138 +153,83 @@ class MainWindow(QMainWindow):
                         self._save_dir = line.split("=")[-1]
 
         # Scripts info
-        self._urls = self.get_all_supported_url()
+        self._urls = get_all_supported_url(self._js_dir)
 
-        # Set Progress bar
-        self._progress_bar = QProgressBar()
-        self._progress_bar.setRange(0, 100)
-        self._progress_bar.setValue(0)
-        self._progress_bar.setFixedHeight(2)
-        self._progress_bar.setParent(central_widget)
-        self._progress_bar.setVisible(False)
+        # UI Initialization
+        self.ui.progressBar.setVisible(False)
+        self.ui.urlComboBox.addItems(self._urls)
+        self.ui.urlComboBox.setCurrentText(self._web_url)
+        self.ui.urlComboBox.currentIndexChanged.connect(self.refresh_url)
+        self.ui.saveLineEdit.setText(self._save_dir)
+        self.ui.savePushButton.clicked.connect(self.set_save_dir)
 
-        # Set toolbar
-        self._url_label = QLabel("Go")
-        self._url_combo_box = QComboBox()
-        self._url_combo_box.addItems(self._urls)
-        self._url_combo_box.setCurrentText(self._web_url)
-        self._url_combo_box.currentIndexChanged.connect(self.refresh_url)
-        self._url_combo_box.adjustSize()
-
-        tool_url_layout = QHBoxLayout()
-        tool_url_layout.addWidget(self._url_label)
-        tool_url_layout.addWidget(self._url_combo_box)
-
-        self._save_dir_button = QPushButton("Save into")
-        self._save_dir_line_edit = QLineEdit(self._save_dir)
-
-        tool_save_dir_layout = QHBoxLayout()
-        tool_save_dir_layout.addWidget(self._save_dir_button)
-        tool_save_dir_layout.addWidget(self._save_dir_line_edit)
-        tool_save_dir_layout.setSpacing(5)
-
-        self._save_dir_button.clicked.connect(self.set_save_dir)
-        self._save_dir_line_edit.setReadOnly(True)
-
-        tool_layout = QHBoxLayout()
-        tool_layout.addLayout(tool_url_layout)
-        tool_layout.addLayout(tool_save_dir_layout)
-
-        main_layout.addLayout(tool_layout)
-
-        # Browser, comment the next line if no debug info is required.
-        # os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--enable-logging --log-level=0"
-        self._browser = QWebEngineView()
-        self._browser.loadProgress.connect(self._progress_bar.setValue)
-        self._browser.loadStarted.connect(self.load_started)
-        self._browser.loadFinished.connect(self.load_finished)
-        self._browser.page().profile().scripts().insert(client_script())
-
-        main_layout.addWidget(self._browser)
+        # Browser
+        self.ui.webEngineView.loadProgress.connect(self.update_progress_bar)
+        self.ui.webEngineView.loadStarted.connect(self.load_started)
+        self.ui.webEngineView.loadFinished.connect(self.load_finished)
+        self.ui.webEngineView.page().profile().scripts().insert(client_script())
 
         # Cross-domain Interaction
-        self._handler = CallHandler(self._progress_bar)
+        self._handler = CallHandler()
         self._handler.set_save_dir(self._save_dir)
+        self._handler.progress.connect(self.update_progress_bar)
 
         self._channel = QWebChannel()
-        self._browser.page().setWebChannel(self._channel)
+        self.ui.webEngineView.page().setWebChannel(self._channel)
         self._channel.registerObject('handler', self._handler)
 
-        self._browser.load(QUrl(self._web_url))
-
-    def get_all_supported_url(self):
-        urls = []
-        js_dir = self._js_dir
-        for js in os.listdir(js_dir):
-            with open(js_dir + js) as f:
-                # First line
-                line = f.readline()
-                if 'host_url' in line:
-                    host_urls = line.replace(' ', '').replace('\n', '').replace('//host_url=', '').split(',')
-                    urls.extend(host_urls)
-        return urls
-
-    def get_usr_script(self):
-        # TODO cache script to avoid from opening script file repeatedly.
-        js_dir = self._js_dir
-        js_file = ''
-        for js in os.listdir(js_dir):
-            with open(js_dir + js) as f:
-                line = f.readline()
-                if 'host_url' in line:
-                    urls = line.replace(" ", "").replace('\n', "")
-                    if self._web_url in urls:
-                        js_file = js_dir + js
-                        # TODO now only one js is supported.
-                        break
-        if js_file == '':
-            return ""
-
-        with open(js_file) as f:
-            return f.read()
+        self.ui.webEngineView.load(QUrl(self._web_url))
 
     @Slot()
     def set_save_dir(self):
+        # TODO Check if the returned save directory is legal.
         default = platform_free_get_path_downloads()
         save_dir = os.path.abspath(QFileDialog.getExistingDirectory(self, "Select Directory", default))
 
         self._save_dir = save_dir
         self._handler.set_save_dir(self._save_dir)
-        self._save_dir_line_edit.setText(self._save_dir)
+        self.ui.saveLineEdit.setText(self._save_dir)
 
         with open(self._usr_info_file, "w") as f:
             f.write("save_dir=" + self._save_dir)
 
     @Slot()
     def refresh_url(self):
-        self._web_url = self._url_combo_box.currentText()
-        self._browser.load(QUrl(self._web_url))
+        self._web_url = self.ui.urlComboBox.currentText()
+        self.ui.webEngineView.load(QUrl(self._web_url))
 
     @Slot()
     def load_started(self):
-        self._progress_bar.setVisible(True)
+        self.update_progress_bar(0)
 
     @Slot(bool)
     def load_finished(self, ok):
         if ok:
-            self._progress_bar.setVisible(False)
-            script = self.get_usr_script()
+            self.update_progress_bar(100)
+            script = get_usr_script(self._web_url, self._js_dir)
             if script == "":
                 return
-            self._browser.page().runJavaScript(script)
+            self.ui.webEngineView.page().runJavaScript(script)
 
-    def resizeEvent(self, event):
-        self._progress_bar.setFixedWidth(self.width())
+    @Slot(int)
+    def update_progress_bar(self, value):
+        # To show progress within a complete period, do not forget update with a value more than 100 to finish display.
+        if value >= 100:
+            self.ui.progressBar.setVisible(False)
+        else:
+            self.ui.progressBar.setVisible(True)
+        self.ui.progressBar.setValue(value)
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+if __name__ == "__main__":
     # os.environ['QTWEBENGINE_REMOTE_DEBUGGING'] = DEBUG_PORT
 
-    qApp = QApplication(sys.argv)
-    with open(os.path.join(basedir, 'themes/test.qss')) as f:
-        qApp.setStyleSheet(f.read())
-    ui = MainWindow()
-    ui.setWindowTitle("WallPaper")
-    ui.show()
-    sys.exit(qApp.exec())
+    app = QApplication(sys.argv)
+
+    with open(os.path.join(BASE_DIR, 'themes/test.qss')) as f:
+        app.setStyleSheet(f.read())
+
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
