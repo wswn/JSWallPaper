@@ -2,14 +2,8 @@
 
 [Release](https://github.com/wswn/JSWallPaper/releases)
 
-**_Supported Websites:_**
-* https://bing.wdbyte.com
-* https://wallhaven.cc
-
 <p align="center">
-  <img alt="Light" src="./UIExamples/wdbyte.jpg" width="45%">
-&nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="Dark" src="./UIExamples/wallhaven.jpg" width="45%">
+  <img alt="Light" src="./UIExamples/wdbyte.jpg" width="100%">
 </p>
 
 ### This is a tool to set desktop background on Windows and MacOS.
