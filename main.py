@@ -17,7 +17,7 @@ DEBUG_PORT = '35588'
 DEBUG_URL = 'http://127.0.0.1:%s' % DEBUG_PORT
 
 # Must make sure that the user-agent is latest!
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'}
+HEADER = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'}
 
 
 # Copy from: https://riverbankcomputing.com/pipermail/pyqt/2015-August/036346.html
@@ -107,7 +107,7 @@ class CallHandler(QObject):
         if not os.path.exists(full_path):
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             # Download picture
-            resp = requests.get(url, stream=True, headers=headers)
+            resp = requests.get(url, stream=True, headers=HEADER)
             total_size = int(resp.headers.get('content-length', 0))
             block_size = 1024
             recv_size = 0
@@ -175,8 +175,8 @@ class MainWindow(QMainWindow):
         self._handler.progress.connect(self.update_progress_bar)
 
         self._channel = QWebChannel()
-        self.ui.webEngineView.page().setWebChannel(self._channel)
         self._channel.registerObject('handler', self._handler)
+        self.ui.webEngineView.page().setWebChannel(self._channel)
 
         self.ui.webEngineView.load(QUrl(self._web_url))
 
